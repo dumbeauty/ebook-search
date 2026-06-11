@@ -1,0 +1,3 @@
+# 告诉Railway使用Node.js环境来运行项目
+[phases.setup]
+nixPkgs = ["nodejs_20"]
