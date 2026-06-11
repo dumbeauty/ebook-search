@@ -3,428 +3,509 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>书海 · 电子书搜索</title>
+  <title>猪猪图书馆 🐷</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Inter:wght@400;500;600&display=swap');
-
     :root {
-      --ink: #1a1a2e;
-      --paper: #f7f4ef;
-      --accent: #2d6a4f;
-      --accent-light: #d8f3dc;
-      --muted: #8a8a9a;
-      --border: #e0dbd2;
-      --tag-bg: #eef2ff;
-      --tag-text: #3730a3;
+      --pink:       #e8739a;
+      --pink-mid:   #f2a0bc;
+      --pink-light: #fce4ee;
+      --pink-pale:  #fff5f8;
+      --border:     #f0cdd8;
+      --ink:        #3d2040;
+      --muted:      #b08fa0;
+      --green:      #6abf8a;
+      --green-lt:   #e0f5e9;
+      --nav-h:      64px;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
 
     body {
-      background: var(--paper);
+      background: var(--pink-pale);
       color: var(--ink);
-      font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      font-family: 'Nunito', 'PingFang SC', 'Microsoft YaHei', sans-serif;
       min-height: 100vh;
-      display: flex;
-      flex-direction: column;
+      overflow-x: hidden;
     }
 
-    /* ── Header ── */
-    header {
-      padding: 48px 24px 32px;
-      text-align: center;
+    /* ── 浮动泡泡 ── */
+    #bubbles {
+      position: fixed; inset: 0;
+      pointer-events: none; z-index: 0; overflow: hidden;
+    }
+    .bubble {
+      position: absolute; border-radius: 50%; opacity: 0;
+      animation: rise linear infinite;
+    }
+    @keyframes rise {
+      0%   { transform: translateY(110vh); opacity: 0; }
+      8%   { opacity: .16; }
+      92%  { opacity: .16; }
+      100% { transform: translateY(-12vh); opacity: 0; }
     }
 
-    .logo {
-      font-family: 'Noto Serif SC', serif;
-      font-size: clamp(2rem, 6vw, 3.2rem);
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      color: var(--ink);
-      line-height: 1;
+    /* ── 导航栏 ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      height: var(--nav-h);
+      background: rgba(255,245,248,.88);
+      backdrop-filter: blur(14px);
+      border-bottom: 2px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 28px;
     }
-
-    .logo span {
-      color: var(--accent);
+    .nav-brand {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 1.35rem; font-weight: 900; color: var(--pink);
+      text-decoration: none; letter-spacing: .02em;
     }
-
-    .tagline {
-      margin-top: 10px;
-      font-size: 0.9rem;
-      color: var(--muted);
-      letter-spacing: 0.04em;
+    .nav-pig { font-size: 1.7rem; animation: navBounce 2.2s ease-in-out infinite; display: inline-block; }
+    @keyframes navBounce {
+      0%,100% { transform: translateY(0) rotate(-4deg); }
+      50%      { transform: translateY(-6px) rotate(4deg); }
     }
-
-    /* ── Search box ── */
-    .search-wrap {
-      max-width: 640px;
-      margin: 0 auto;
-      padding: 0 20px;
-    }
-
-    .search-box {
-      display: flex;
-      align-items: center;
-      background: #fff;
-      border: 1.5px solid var(--border);
-      border-radius: 12px;
-      padding: 6px 6px 6px 20px;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
-      transition: border-color 0.2s, box-shadow 0.2s;
-    }
-
-    .search-box:focus-within {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(45,106,79,0.12);
-    }
-
-    .search-box input {
-      flex: 1;
-      border: none;
-      outline: none;
-      font-size: 1rem;
-      background: transparent;
-      color: var(--ink);
-      font-family: inherit;
-    }
-
-    .search-box input::placeholder { color: var(--muted); }
-
-    .btn-search {
-      background: var(--accent);
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      padding: 10px 22px;
-      font-size: 0.95rem;
-      font-weight: 600;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: background 0.15s, transform 0.1s;
-      font-family: inherit;
-    }
-
-    .btn-search:hover { background: #245a42; }
-    .btn-search:active { transform: scale(0.97); }
-
-    /* ── Source tags ── */
-    .sources-hint {
-      max-width: 640px;
-      margin: 14px auto 0;
-      padding: 0 20px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      align-items: center;
-    }
-
-    .hint-label {
-      font-size: 0.78rem;
-      color: var(--muted);
-      margin-right: 2px;
-    }
-
-    .tag {
-      font-size: 0.75rem;
-      background: var(--tag-bg);
-      color: var(--tag-text);
-      padding: 3px 9px;
-      border-radius: 99px;
-      font-weight: 500;
-    }
-
-    /* ── Results area ── */
-    main {
-      flex: 1;
-      max-width: 720px;
-      width: 100%;
-      margin: 32px auto 0;
-      padding: 0 20px 60px;
-    }
-
-    .state-idle {
-      text-align: center;
-      padding: 60px 0;
-    }
-
-    .state-idle .big-icon {
-      font-size: 3rem;
-      display: block;
-      margin-bottom: 16px;
-      opacity: 0.35;
-    }
-
-    .state-idle p {
-      color: var(--muted);
-      font-size: 0.95rem;
-      line-height: 1.7;
-    }
-
-    /* Results grid */
-    .results-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 16px;
-    }
-
-    .results-title {
-      font-size: 0.88rem;
-      color: var(--muted);
-    }
-
-    .results-title strong { color: var(--ink); }
-
-    .results-grid {
-      display: grid;
-      gap: 12px;
-    }
-
-    .result-card {
-      background: #fff;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 16px 20px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      transition: box-shadow 0.15s, border-color 0.15s;
-    }
-
-    .result-card:hover {
-      border-color: var(--accent);
-      box-shadow: 0 4px 16px rgba(45,106,79,0.1);
-    }
-
-    .card-left { flex: 1; min-width: 0; }
-
-    .source-name {
-      font-size: 0.75rem;
-      font-weight: 600;
-      color: var(--accent);
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      margin-bottom: 4px;
-    }
-
-    .source-desc {
-      font-size: 0.88rem;
-      color: var(--muted);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .btn-go {
-      flex-shrink: 0;
-      background: var(--accent-light);
-      color: var(--accent);
-      border: none;
-      border-radius: 8px;
-      padding: 8px 16px;
-      font-size: 0.85rem;
-      font-weight: 600;
-      cursor: pointer;
+    .nav-links { display: flex; align-items: center; gap: 6px; }
+    .nav-link {
+      font-size: .88rem; font-weight: 800; color: var(--muted);
+      background: none; border: none; cursor: pointer;
+      padding: 7px 14px; border-radius: 999px;
+      font-family: inherit; transition: background .15s, color .15s;
       text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      transition: background 0.15s;
-      font-family: inherit;
     }
+    .nav-link:hover { background: var(--pink-light); color: var(--pink); }
+    .nav-link.active { background: var(--pink-light); color: var(--pink); }
 
-    .btn-go:hover { background: #b7e4c7; }
-
-    .btn-go-all {
-      display: block;
-      width: 100%;
+    /* ── Hero ── */
+    #top { padding-top: var(--nav-h); }
+    .hero {
       text-align: center;
-      margin-top: 20px;
-      background: var(--ink);
-      color: var(--paper);
-      border: none;
-      border-radius: 12px;
-      padding: 14px;
-      font-size: 0.95rem;
-      font-weight: 600;
-      cursor: pointer;
-      font-family: inherit;
-      transition: background 0.15s;
+      padding: 64px 24px 48px;
+      position: relative; z-index: 1;
+    }
+    .hero-pig {
+      font-size: 6rem;
+      display: inline-block;
+      animation: heroBounce 2.6s ease-in-out infinite;
+      filter: drop-shadow(0 10px 24px rgba(232,115,154,.3));
+      cursor: pointer; user-select: none;
+    }
+    @keyframes heroBounce {
+      0%,100% { transform: translateY(0) rotate(-3deg); }
+      50%      { transform: translateY(-18px) rotate(3deg); }
+    }
+    .hero-title {
+      margin-top: 18px;
+      font-size: clamp(2.2rem, 7vw, 3.4rem);
+      font-weight: 900; color: var(--pink);
+      letter-spacing: .04em;
+      text-shadow: 0 4px 0 rgba(232,115,154,.18);
+    }
+    .hero-sub {
+      margin-top: 10px;
+      font-size: 1.05rem; font-weight: 700;
+      color: var(--muted); letter-spacing: .02em;
+    }
+    .hero-badges {
+      display: flex; justify-content: center; gap: 10px;
+      flex-wrap: wrap; margin-top: 20px;
+    }
+    .badge {
+      background: #fff; border: 2px solid var(--border);
+      color: var(--pink); font-size: .8rem; font-weight: 800;
+      padding: 5px 14px; border-radius: 999px;
+      animation: badgePop 2s ease-in-out infinite;
+    }
+    .badge:nth-child(2) { animation-delay: .4s; }
+    .badge:nth-child(3) { animation-delay: .8s; }
+    @keyframes badgePop {
+      0%,100% { transform: scale(1); }
+      50%      { transform: scale(1.06); }
     }
 
-    .btn-go-all:hover { background: #2d2d4a; }
+    /* ── 搜索区 ── */
+    #search { position: relative; z-index: 1; }
+    .search-section {
+      max-width: 640px; margin: 0 auto; padding: 0 20px 16px;
+    }
+    .search-box {
+      display: flex; align-items: center;
+      background: #fff;
+      border: 2.5px solid var(--pink-mid);
+      border-radius: 999px;
+      padding: 8px 8px 8px 26px;
+      box-shadow: 0 6px 28px rgba(232,115,154,.18);
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .search-box:focus-within {
+      border-color: var(--pink);
+      box-shadow: 0 6px 36px rgba(232,115,154,.32);
+    }
+    .search-box input {
+      flex: 1; border: none; outline: none;
+      font-size: 1.05rem; font-weight: 700;
+      font-family: inherit; color: var(--ink);
+      background: transparent;
+    }
+    .search-box input::placeholder { color: var(--pink-mid); }
+    .btn-search {
+      background: linear-gradient(135deg, var(--pink), #d45a82);
+      color: #fff; border: none; border-radius: 999px;
+      padding: 13px 30px; font-size: 1rem; font-weight: 900;
+      cursor: pointer; font-family: inherit;
+      box-shadow: 0 4px 14px rgba(232,115,154,.42);
+      transition: transform .15s, box-shadow .15s;
+      white-space: nowrap;
+    }
+    .btn-search:hover  { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(232,115,154,.52); }
+    .btn-search:active { transform: scale(.96); }
+    .btn-search:disabled { background: var(--pink-mid); cursor: not-allowed; transform: none; box-shadow: none; }
+
+    /* 快捷标签 */
+    .tags {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      justify-content: center; margin-top: 14px;
+    }
+    .tag {
+      background: #fff; border: 1.5px solid var(--border);
+      color: var(--pink); font-size: .82rem; font-weight: 800;
+      padding: 6px 16px; border-radius: 999px; cursor: pointer;
+      transition: background .15s, transform .15s, border-color .15s;
+    }
+    .tag:hover { background: var(--pink-light); border-color: var(--pink-mid); transform: translateY(-2px); }
+
+    /* ── 结果区 ── */
+    #results { position: relative; z-index: 1; }
+    .results-wrap {
+      max-width: 700px; margin: 32px auto 80px; padding: 0 20px;
+    }
+
+    /* 空态 */
+    .state-idle {
+      text-align: center; padding: 56px 0;
+    }
+    .state-idle .idle-icon { font-size: 4rem; display: block; margin-bottom: 14px; animation: heroBounce 2.6s ease-in-out infinite; }
+    .state-idle p { color: var(--muted); font-weight: 700; font-size: 1rem; line-height: 1.9; }
+
+    /* 加载 */
+    .loading { text-align: center; padding: 64px 0; }
+    .loading .spin { font-size: 3.8rem; display: block; animation: spin 1s ease-in-out infinite alternate; }
+    @keyframes spin {
+      from { transform: rotate(-18deg) scale(.9); }
+      to   { transform: rotate(18deg)  scale(1.1); }
+    }
+    .loading p { color: var(--pink); font-weight: 800; margin-top: 14px; font-size: 1rem; }
+
+    /* 结果头 */
+    .results-head {
+      display: flex; align-items: center; gap: 10px;
+      font-size: .9rem; font-weight: 800; color: var(--muted);
+      margin-bottom: 18px; flex-wrap: wrap;
+    }
+    .results-head strong { color: var(--pink); }
+    .count-badge {
+      background: var(--pink-light); color: var(--pink);
+      font-size: .78rem; font-weight: 900;
+      padding: 4px 12px; border-radius: 999px;
+    }
+
+    /* 卡片 */
+    .card {
+      background: #fff;
+      border: 2px solid var(--border);
+      border-radius: 22px;
+      padding: 22px 24px;
+      margin-bottom: 16px;
+      position: relative; overflow: hidden;
+      transition: transform .22s, box-shadow .22s, border-color .22s;
+      opacity: 0; transform: translateY(18px);
+      animation: cardIn .38s ease forwards;
+    }
+    @keyframes cardIn { to { opacity: 1; transform: translateY(0); } }
+    .card::before {
+      content: '';
+      position: absolute; top: 0; left: 0;
+      width: 5px; height: 100%;
+      background: linear-gradient(to bottom, var(--pink), var(--pink-mid));
+      border-radius: 5px 0 0 5px;
+    }
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 32px rgba(232,115,154,.16);
+      border-color: var(--pink-mid);
+    }
+
+    .card-header { display: flex; gap: 12px; align-items: flex-start; }
+    .card-icon {
+      flex-shrink: 0; width: 46px; height: 46px;
+      background: var(--pink-light); border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem;
+    }
+    .card-info { flex: 1; min-width: 0; }
+    .card-title {
+      font-size: 1.05rem; font-weight: 900; color: var(--ink);
+      line-height: 1.4; margin-bottom: 4px;
+    }
+    .card-meta {
+      font-size: .82rem; color: var(--muted); font-weight: 700;
+      display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+    }
+    .meta-item { display: flex; align-items: center; gap: 3px; }
+    .src-badge {
+      flex-shrink: 0;
+      background: var(--pink-light); color: var(--pink);
+      font-size: .72rem; font-weight: 900;
+      padding: 4px 10px; border-radius: 999px;
+    }
+
+    .card-actions {
+      display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap;
+    }
+    .btn-go {
+      display: inline-flex; align-items: center; gap: 5px;
+      border: none; border-radius: 999px;
+      padding: 9px 20px; font-size: .86rem; font-weight: 800;
+      cursor: pointer; font-family: inherit; text-decoration: none;
+      transition: transform .15s, box-shadow .15s;
+    }
+    .btn-go.outline {
+      background: var(--pink-light); color: var(--pink);
+    }
+    .btn-go.outline:hover { background: #fbd0e0; transform: translateY(-1px); }
+    .btn-go.solid {
+      background: linear-gradient(135deg, var(--green), #52a870);
+      color: #fff;
+      box-shadow: 0 3px 10px rgba(106,191,138,.35);
+    }
+    .btn-go.solid:hover { transform: translateY(-1px); box-shadow: 0 5px 16px rgba(106,191,138,.45); }
+
+    /* 无结果 */
+    .no-results { text-align: center; padding: 64px 0; }
+    .no-results .icon { font-size: 3.5rem; display: block; margin-bottom: 12px; }
+    .no-results p { color: var(--muted); font-weight: 700; font-size: 1rem; line-height: 1.9; }
+
+    /* ── 回顶部按钮 ── */
+    #topBtn {
+      position: fixed; bottom: 32px; right: 28px; z-index: 200;
+      width: 52px; height: 52px; border-radius: 999px;
+      background: linear-gradient(135deg, var(--pink), #d45a82);
+      color: #fff; border: none; cursor: pointer;
+      font-size: 1.4rem; display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 16px rgba(232,115,154,.5);
+      opacity: 0; pointer-events: none;
+      transition: opacity .3s, transform .3s;
+    }
+    #topBtn.show { opacity: 1; pointer-events: auto; }
+    #topBtn:hover { transform: translateY(-3px); }
 
     /* ── Footer ── */
     footer {
-      text-align: center;
-      padding: 20px;
-      font-size: 0.78rem;
-      color: var(--muted);
-      border-top: 1px solid var(--border);
+      text-align: center; padding: 28px 20px;
+      font-size: .82rem; color: var(--muted); font-weight: 700;
+      border-top: 2px dashed var(--border);
+      position: relative; z-index: 1;
     }
 
-    @media (max-width: 480px) {
-      header { padding: 36px 16px 24px; }
-      .result-card { flex-direction: column; align-items: flex-start; }
-      .btn-go { width: 100%; justify-content: center; }
+    @media (max-width: 520px) {
+      .nav-links .nav-link:not(:last-child) { display: none; }
+      .hero-pig { font-size: 4.5rem; }
+      .btn-search { padding: 12px 20px; }
     }
   </style>
 </head>
 <body>
 
-<header>
-  <div class="logo">书<span>海</span></div>
-  <p class="tagline">一搜即达，九源齐发</p>
-</header>
+<div id="bubbles"></div>
 
-<div class="search-wrap">
+<!-- 导航栏 -->
+<nav>
+  <a class="nav-brand" href="#top">
+    <span class="nav-pig">🐷</span>
+    猪猪图书馆
+  </a>
+  <div class="nav-links">
+    <a class="nav-link active" href="#top">首页</a>
+    <a class="nav-link" href="#search">搜书</a>
+    <a class="nav-link" href="#results">结果</a>
+  </div>
+</nav>
+
+<!-- Hero -->
+<div id="top"></div>
+<section class="hero">
+  <div class="hero-pig" id="heroPig">🐷</div>
+  <div class="hero-title">猪猪图书馆</div>
+  <div class="hero-sub">🌐 你的线上移动图书馆</div>
+  <div class="hero-badges">
+    <span class="badge">📚 海量书目</span>
+    <span class="badge">🔍 实时搜索</span>
+    <span class="badge">🌟 免费借阅</span>
+  </div>
+</section>
+
+<!-- 搜索 -->
+<section id="search" class="search-section">
   <div class="search-box">
-    <input
-      type="text"
-      id="query"
-      placeholder="书名、作者、ISBN…"
-      autocomplete="off"
-      autofocus
-    />
-    <button class="btn-search" onclick="doSearch()">搜索</button>
+    <input type="text" id="query" placeholder="🔍 搜书名、作者…" autocomplete="off" />
+    <button class="btn-search" id="btn" onclick="doSearch()">找书 🐽</button>
   </div>
-</div>
-
-<div class="sources-hint">
-  <span class="hint-label">收录来源：</span>
-  <span class="tag">Saltyleo</span>
-  <span class="tag">安娜的档案</span>
-  <span class="tag">Z-Library</span>
-  <span class="tag">鸠摩搜书</span>
-  <span class="tag">书籍知识库</span>
-  <span class="tag">博看书苑</span>
-  <span class="tag">书格</span>
-  <span class="tag">首都图书馆</span>
-  <span class="tag">国家智慧教育</span>
-</div>
-
-<main id="main">
-  <div class="state-idle">
-    <span class="big-icon">📖</span>
-    <p>输入书名开始搜索<br>同时检索9个书源，省去逐一查找的麻烦</p>
+  <div class="tags">
+    <span class="tag" onclick="quickSearch('economics')">📈 经济学</span>
+    <span class="tag" onclick="quickSearch('psychology')">🧠 心理学</span>
+    <span class="tag" onclick="quickSearch('philosophy')">💡 哲学</span>
+    <span class="tag" onclick="quickSearch('history')">🏛️ 历史</span>
+    <span class="tag" onclick="quickSearch('fiction')">📖 小说</span>
+    <span class="tag" onclick="quickSearch('science')">🔬 科学</span>
   </div>
-</main>
+</section>
 
-<footer>书海 · 仅聚合公开来源链接，不存储任何文件</footer>
+<!-- 结果 -->
+<section id="results">
+  <div class="results-wrap" id="main">
+    <div class="state-idle">
+      <span class="idle-icon">📚</span>
+      <p>猪猪在等你搜书哦～<br>输入书名或点上面的标签快速搜索</p>
+    </div>
+  </div>
+</section>
+
+<!-- 回顶部 -->
+<button id="topBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="回到顶部">↑</button>
+
+<footer>🐷 猪猪图书馆 · 你的线上移动图书馆 · 数据来自 Open Library</footer>
 
 <script>
-  // 书源配置
-  const SOURCES = [
-    {
-      name: "Saltyleo",
-      desc: "综合聚合，主流书源首选",
-      url: q => `https://saltyleo.com/?s=${encodeURIComponent(q)}`,
-      star: 3,
-    },
-    {
-      name: "安娜的档案",
-      desc: "Anna's Archive，英文书及学术资源强",
-      url: q => `https://annas-archive.org/search?q=${encodeURIComponent(q)}`,
-      star: 2,
-    },
-    {
-      name: "Z-Library",
-      desc: "海量书籍，需注册账号",
-      url: q => `https://z-lib.id/s/${encodeURIComponent(q)}`,
-      star: 2,
-    },
-    {
-      name: "鸠摩搜书",
-      desc: "中文书源，格式多样",
-      url: q => `https://www.jiumodiary.com/?mobi_relate=${encodeURIComponent(q)}`,
-      star: 1,
-    },
-    {
-      name: "书籍知识库",
-      desc: "中文书籍收录较全",
-      url: q => `https://book.tstrs.me/search?keyword=${encodeURIComponent(q)}`,
-      star: 1,
-    },
-    {
-      name: "博看书苑",
-      desc: "国内杂志期刊专项",
-      url: q => `https://www.bookan.com.cn/search?keyword=${encodeURIComponent(q)}`,
-      star: 3,
-    },
-    {
-      name: "书格",
-      desc: "古籍善本专项资源",
-      url: q => `https://new.shuge.org/?s=${encodeURIComponent(q)}`,
-      star: 3,
-    },
-    {
-      name: "首都图书馆",
-      desc: "英文绘本及馆藏资源",
-      url: q => `http://www.clcn.net.cn/search?queryStr=${encodeURIComponent(q)}`,
-      star: 3,
-    },
-    {
-      name: "国家智慧教育平台",
-      desc: "各科教材官方下载",
-      url: q => `https://basic.smartedu.cn/search?keyword=${encodeURIComponent(q)}`,
-      star: 2,
-    },
-  ];
+  const API = 'https://web-production-2c644.up.railway.app';
 
-  let lastQuery = '';
+  /* 泡泡 */
+  const colors = ['#f2a0bc','#fce4ee','#e8739a','#f9c4d8','#fdd5e4','#fff0f5'];
+  document.querySelectorAll || (function(){
+    const c = document.getElementById('bubbles');
+    for(let i=0;i<20;i++){
+      const b = document.createElement('div');
+      b.className='bubble';
+      const s = Math.random()*70+20;
+      b.style.cssText=`width:${s}px;height:${s}px;background:${colors[Math.floor(Math.random()*colors.length)]};left:${Math.random()*100}%;animation-duration:${Math.random()*16+10}s;animation-delay:${Math.random()*12}s;`;
+      c.appendChild(b);
+    }
+  })();
+  (function(){
+    const c = document.getElementById('bubbles');
+    for(let i=0;i<20;i++){
+      const b = document.createElement('div');
+      b.className='bubble';
+      const s = Math.random()*70+20;
+      b.style.cssText=`width:${s}px;height:${s}px;background:${colors[Math.floor(Math.random()*colors.length)]};left:${Math.random()*100}%;animation-duration:${Math.random()*16+10}s;animation-delay:${Math.random()*12}s;`;
+      c.appendChild(b);
+    }
+  })();
 
-  function doSearch() {
-    const q = document.getElementById('query').value.trim();
-    if (!q) return;
-    lastQuery = q;
-    renderResults(q);
-  }
-
-  document.getElementById('query').addEventListener('keydown', e => {
-    if (e.key === 'Enter') doSearch();
+  /* 猪猪互动 */
+  const pigEmojis = ['🐷','🐽','🐖','🥰','😘','✨','💕','🎀','🌸'];
+  const heroPig = document.getElementById('heroPig');
+  heroPig.addEventListener('click', ()=>{
+    heroPig.textContent = pigEmojis[Math.floor(Math.random()*pigEmojis.length)];
+    setTimeout(()=>heroPig.textContent='🐷', 900);
   });
 
-  function stars(n) {
-    return '⭐'.repeat(n);
+  /* 回顶部按钮显示 */
+  const topBtn = document.getElementById('topBtn');
+  window.addEventListener('scroll', ()=>{
+    topBtn.classList.toggle('show', window.scrollY > 300);
+  });
+
+  /* 导航高亮 */
+  const sections = ['top','search','results'];
+  window.addEventListener('scroll', ()=>{
+    let current = 'top';
+    sections.forEach(id=>{
+      const el = document.getElementById(id);
+      if(el && window.scrollY >= el.offsetTop - 100) current = id;
+    });
+    document.querySelectorAll('.nav-link').forEach(l=>{
+      l.classList.toggle('active', l.getAttribute('href')==='#'+current);
+    });
+  });
+
+  /* 搜索 */
+  document.getElementById('query').addEventListener('keydown', e=>{
+    if(e.key==='Enter') doSearch();
+  });
+
+  function quickSearch(q){
+    document.getElementById('query').value = q;
+    doSearch();
+    document.getElementById('search').scrollIntoView({behavior:'smooth'});
   }
 
-  function renderResults(q) {
+  async function doSearch(){
+    const q = document.getElementById('query').value.trim();
+    if(!q) return;
+
     const main = document.getElementById('main');
-    main.innerHTML = `
-      <div class="results-header">
-        <span class="results-title">搜索 <strong>「${escHtml(q)}」</strong> — 点击前往各书源</span>
-      </div>
-      <div class="results-grid">
-        ${SOURCES.map(s => `
-          <div class="result-card">
-            <div class="card-left">
-              <div class="source-name">${escHtml(s.name)} ${stars(s.star)}</div>
-              <div class="source-desc">${escHtml(s.desc)}</div>
+    const btn  = document.getElementById('btn');
+
+    btn.disabled = true;
+    btn.textContent = '搜索中🐽…';
+    main.innerHTML = `<div class="loading"><span class="spin">🐷</span><p>猪猪正在图书馆里找书，稍等哦～</p></div>`;
+
+    // 滚到结果区
+    document.getElementById('results').scrollIntoView({behavior:'smooth', block:'start'});
+
+    try {
+      const res  = await fetch(`${API}/search?q=${encodeURIComponent(q)}`);
+      const data = await res.json();
+      const list = data.results || [];
+
+      if(!list.length){
+        main.innerHTML = `<div class="no-results"><span class="icon">😢</span><p>猪猪找不到这本书…<br>换个关键词试试吧！</p></div>`;
+        return;
+      }
+
+      const bookIcons = ['📗','📘','📙','📕','📒','📓','📔'];
+
+      main.innerHTML = `
+        <div class="results-head">
+          🐷 猪猪找到了
+          <span class="count-badge">${list.length} 本</span>
+          关于 <strong>「${escHtml(q)}」</strong> 的书！
+        </div>
+        ${list.map((book,i)=>`
+          <div class="card" style="animation-delay:${i*.055}s">
+            <div class="card-header">
+              <div class="card-icon">${bookIcons[i%bookIcons.length]}</div>
+              <div class="card-info">
+                <div class="card-title">${escHtml(book.title)}</div>
+                <div class="card-meta">
+                  ${book.author?`<span class="meta-item">✍️ ${escHtml(book.author)}</span>`:''}
+                  ${book.year?`<span class="meta-item">📅 ${book.year}年</span>`:''}
+                </div>
+              </div>
+              <span class="src-badge">${escHtml(book.source)}</span>
             </div>
-            <a class="btn-go" href="${s.url(q)}" target="_blank" rel="noopener">
-              前往搜索 →
-            </a>
+            <div class="card-actions">
+              <a class="btn-go outline" href="${book.link}" target="_blank" rel="noopener">📖 查看详情</a>
+              ${book.borrow?`<a class="btn-go solid" href="${book.borrow}" target="_blank" rel="noopener">🌟 免费借阅</a>`:''}
+            </div>
           </div>
         `).join('')}
-      </div>
-      <button class="btn-go-all" onclick="openAll()">🚀 一键打开全部书源</button>
-    `;
+      `;
+
+    } catch(err){
+      main.innerHTML = `<div class="no-results"><span class="icon">😵</span><p>网络出错了，猪猪晕了…<br>请稍后再试！</p></div>`;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '找书 🐽';
+    }
   }
 
-  function openAll() {
-    if (!lastQuery) return;
-    SOURCES.forEach((s, i) => {
-      setTimeout(() => {
-        window.open(s.url(lastQuery), '_blank');
-      }, i * 120); // 稍微错开，避免浏览器拦截
-    });
-  }
-
-  function escHtml(s) {
-    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  function escHtml(s){
+    if(!s) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 </script>
-
 </body>
 </html>
