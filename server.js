@@ -46,7 +46,9 @@ app.get('/search', async (req, res) => {
   }
 });
 
-// 启动服务器，监听3000端口
-app.listen(3000, () => {
-  console.log('服务器已启动：http://localhost:3000');
+// Railway会通过环境变量PORT告诉我们用哪个端口
+// 本地开发默认用3000
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`服务器已启动：http://localhost:${PORT}`);
 });
