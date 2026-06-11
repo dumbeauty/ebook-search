@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>书海 · 电子书搜索</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Inter:wght@400;500;600&display=swap');
+
+    :root {
+      --ink: #1a1a2e;
+      --paper: #f7f4ef;
+      --accent: #2d6a4f;
+      --accent-light: #d8f3dc;
+      --muted: #8a8a9a;
+      --border: #e0dbd2;
+      --tag-bg: #eef2ff;
+      --tag-text: #3730a3;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--paper);
+      color: var(--ink);
+      font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ── */
+    header {
+      padding: 48px 24px 32px;
+      text-align: center;
+    }
+
+    .logo {
+      font-family: 'Noto Serif SC', serif;
+      font-size: clamp(2rem, 6vw, 3.2rem);
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: var(--ink);
+      line-height: 1;
+    }
+
+    .logo span {
+      color: var(--accent);
+    }
+
+    .tagline {
+      margin-top: 10px;
+      font-size: 0.9rem;
+      color: var(--muted);
+      letter-spacing: 0.04em;
+    }
+
+    /* ── Search box ── */
+    .search-wrap {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    .search-box {
+      display: flex;
+      align-items: center;
+      background: #fff;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 6px 6px 6px 20px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .search-box:focus-within {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(45,106,79,0.12);
+    }
+
+    .search-box input {
+      flex: 1;
+      border: none;
+      outline: none;
+      font-size: 1rem;
+      background: transparent;
+      color: var(--ink);
+      font-family: inherit;
+    }
+
+    .search-box input::placeholder { color: var(--muted); }
+
+    .btn-search {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 22px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s, transform 0.1s;
+      font-family: inherit;
+    }
+
+    .btn-search:hover { background: #245a42; }
+    .btn-search:active { transform: scale(0.97); }
+
+    /* ── Source tags ── */
+    .sources-hint {
+      max-width: 640px;
+      margin: 14px auto 0;
+      padding: 0 20px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .hint-label {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-right: 2px;
+    }
+
+    .tag {
+      font-size: 0.75rem;
+      background: var(--tag-bg);
+      color: var(--tag-text);
+      padding: 3px 9px;
+      border-radius: 99px;
+      font-weight: 500;
+    }
+
+    /* ── Results area ── */
+    main {
+      flex: 1;
+      max-width: 720px;
+      width: 100%;
+      margin: 32px auto 0;
+      padding: 0 20px 60px;
+    }
+
+    .state-idle {
+      text-align: center;
+      padding: 60px 0;
+    }
+
+    .state-idle .big-icon {
+      font-size: 3rem;
+      display: block;
+      margin-bottom: 16px;
+      opacity: 0.35;
+    }
+
+    .state-idle p {
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.7;
+    }
+
+    /* Results grid */
+    .results-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .results-title {
+      font-size: 0.88rem;
+      color: var(--muted);
+    }
+
+    .results-title strong { color: var(--ink); }
+
+    .results-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .result-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      transition: box-shadow 0.15s, border-color 0.15s;
+    }
+
+    .result-card:hover {
+      border-color: var(--accent);
+      box-shadow: 0 4px 16px rgba(45,106,79,0.1);
+    }
+
+    .card-left { flex: 1; min-width: 0; }
+
+    .source-name {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 4px;
+    }
+
+    .source-desc {
+      font-size: 0.88rem;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .btn-go {
+      flex-shrink: 0;
+      background: var(--accent-light);
+      color: var(--accent);
+      border: none;
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: background 0.15s;
+      font-family: inherit;
+    }
+
+    .btn-go:hover { background: #b7e4c7; }
+
+    .btn-go-all {
+      display: block;
+      width: 100%;
+      text-align: center;
+      margin-top: 20px;
+      background: var(--ink);
+      color: var(--paper);
+      border: none;
+      border-radius: 12px;
+      padding: 14px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.15s;
+    }
+
+    .btn-go-all:hover { background: #2d2d4a; }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      padding: 20px;
+      font-size: 0.78rem;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+    }
+
+    @media (max-width: 480px) {
+      header { padding: 36px 16px 24px; }
+      .result-card { flex-direction: column; align-items: flex-start; }
+      .btn-go { width: 100%; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">书<span>海</span></div>
+  <p class="tagline">一搜即达，九源齐发</p>
+</header>
+
+<div class="search-wrap">
+  <div class="search-box">
+    <input
+      type="text"
+      id="query"
+      placeholder="书名、作者、ISBN…"
+      autocomplete="off"
+      autofocus
+    />
+    <button class="btn-search" onclick="doSearch()">搜索</button>
+  </div>
+</div>
+
+<div class="sources-hint">
+  <span class="hint-label">收录来源：</span>
+  <span class="tag">Saltyleo</span>
+  <span class="tag">安娜的档案</span>
+  <span class="tag">Z-Library</span>
+  <span class="tag">鸠摩搜书</span>
+  <span class="tag">书籍知识库</span>
+  <span class="tag">博看书苑</span>
+  <span class="tag">书格</span>
+  <span class="tag">首都图书馆</span>
+  <span class="tag">国家智慧教育</span>
+</div>
+
+<main id="main">
+  <div class="state-idle">
+    <span class="big-icon">📖</span>
+    <p>输入书名开始搜索<br>同时检索9个书源，省去逐一查找的麻烦</p>
+  </div>
+</main>
+
+<footer>书海 · 仅聚合公开来源链接，不存储任何文件</footer>
+
+<script>
+  // 书源配置
+  const SOURCES = [
+    {
+      name: "Saltyleo",
+      desc: "综合聚合，主流书源首选",
+      url: q => `https://saltyleo.com/?s=${encodeURIComponent(q)}`,
+      star: 3,
+    },
+    {
+      name: "安娜的档案",
+      desc: "Anna's Archive，英文书及学术资源强",
+      url: q => `https://annas-archive.org/search?q=${encodeURIComponent(q)}`,
+      star: 2,
+    },
+    {
+      name: "Z-Library",
+      desc: "海量书籍，需注册账号",
+      url: q => `https://z-lib.id/s/${encodeURIComponent(q)}`,
+      star: 2,
+    },
+    {
+      name: "鸠摩搜书",
+      desc: "中文书源，格式多样",
+      url: q => `https://www.jiumodiary.com/?mobi_relate=${encodeURIComponent(q)}`,
+      star: 1,
+    },
+    {
+      name: "书籍知识库",
+      desc: "中文书籍收录较全",
+      url: q => `https://book.tstrs.me/search?keyword=${encodeURIComponent(q)}`,
+      star: 1,
+    },
+    {
+      name: "博看书苑",
+      desc: "国内杂志期刊专项",
+      url: q => `https://www.bookan.com.cn/search?keyword=${encodeURIComponent(q)}`,
+      star: 3,
+    },
+    {
+      name: "书格",
+      desc: "古籍善本专项资源",
+      url: q => `https://new.shuge.org/?s=${encodeURIComponent(q)}`,
+      star: 3,
+    },
+    {
+      name: "首都图书馆",
+      desc: "英文绘本及馆藏资源",
+      url: q => `http://www.clcn.net.cn/search?queryStr=${encodeURIComponent(q)}`,
+      star: 3,
+    },
+    {
+      name: "国家智慧教育平台",
+      desc: "各科教材官方下载",
+      url: q => `https://basic.smartedu.cn/search?keyword=${encodeURIComponent(q)}`,
+      star: 2,
+    },
+  ];
+
+  let lastQuery = '';
+
+  function doSearch() {
+    const q = document.getElementById('query').value.trim();
+    if (!q) return;
+    lastQuery = q;
+    renderResults(q);
+  }
+
+  document.getElementById('query').addEventListener('keydown', e => {
+    if (e.key === 'Enter') doSearch();
+  });
+
+  function stars(n) {
+    return '⭐'.repeat(n);
+  }
+
+  function renderResults(q) {
+    const main = document.getElementById('main');
+    main.innerHTML = `
+      <div class="results-header">
+        <span class="results-title">搜索 <strong>「${escHtml(q)}」</strong> — 点击前往各书源</span>
+      </div>
+      <div class="results-grid">
+        ${SOURCES.map(s => `
+          <div class="result-card">
+            <div class="card-left">
+              <div class="source-name">${escHtml(s.name)} ${stars(s.star)}</div>
+              <div class="source-desc">${escHtml(s.desc)}</div>
+            </div>
+            <a class="btn-go" href="${s.url(q)}" target="_blank" rel="noopener">
+              前往搜索 →
+            </a>
+          </div>
+        `).join('')}
+      </div>
+      <button class="btn-go-all" onclick="openAll()">🚀 一键打开全部书源</button>
+    `;
+  }
+
+  function openAll() {
+    if (!lastQuery) return;
+    SOURCES.forEach((s, i) => {
+      setTimeout(() => {
+        window.open(s.url(lastQuery), '_blank');
+      }, i * 120); // 稍微错开，避免浏览器拦截
+    });
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+</script>
+
+</body>
+</html>
